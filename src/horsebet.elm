@@ -23,9 +23,9 @@ main =
 
 type alias Model =
     { pools : List Pool
+    , selectedPool : String
     , suggestion : Suggestion
     , message : String
-    , flavour : String
     }
 
 
@@ -70,7 +70,29 @@ initalPools =
                             "trackCode": 6,
                             "raceNumber": 5,
                             "flavour": "FAVORIT_HARRY"
-                        }
+                        },
+                         {
+                           "betType": "V75",
+                           "date": [
+                             2017,
+                             9,
+                             11
+                           ],
+                           "trackCode": 5,
+                           "raceNumber": 4,
+                           "flavour": "FAVORIT_HARRY"
+                         },
+                         {
+                           "betType": "V75",
+                           "date": [
+                             2017,
+                             9,
+                             11
+                           ],
+                           "trackCode": 5,
+                           "raceNumber": 4,
+                           "flavour": "CHANS_HARRY"
+                         }
                     ]
                 }
                 """
@@ -88,7 +110,7 @@ init =
     ( { pools = initalPools
       , suggestion = { legs = [] }
       , message = "Please select something"
-      , flavour = "chans"
+      , selectedPool = ""
       }
     , Cmd.none
     )
@@ -101,7 +123,7 @@ init =
 type Msg
     = NewSuggestion (Result Http.Error Suggestion)
     | GenerateSuggestion
-    | SetFlavour String
+    | SetPool String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -116,8 +138,8 @@ update msg model =
         GenerateSuggestion ->
             ( model, generateSuggestion model )
 
-        SetFlavour flavour ->
-            ( { model | flavour = flavour }, Cmd.none )
+        SetPool poolName ->
+            ( { model | selectedPool = poolName }, Cmd.none )
 
 
 
@@ -128,16 +150,8 @@ view : Model -> Html Msg
 view model =
     div []
         [ h2 [] [ text "Pools" ]
-        , poolsView model
         , h2 [] [ text "Make suggestion" ]
-        , select [ onInput SetFlavour ]
-            [ option []
-                [ text "chans"
-                ]
-            , option []
-                [ text "favorit"
-                ]
-            ]
+        , poolsView model
         , button [ onClick GenerateSuggestion ] [ text "Get suggestion" ]
         , hr [] []
         , p []
@@ -151,15 +165,28 @@ view model =
 
 poolsView : Model -> Html Msg
 poolsView model =
-    div []
+    select [ onInput SetPool ]
         (List.map poolView model.pools)
 
 
 poolView : Pool -> Html Msg
 poolView pool =
-    p []
-        [ text pool.betType
+    option []
+        [ text (poolToString pool)
         ]
+
+
+poolToString : Pool -> String
+poolToString pool =
+    pool.betType
+        ++ " "
+        ++ toString pool.date
+        ++ " "
+        ++ toString pool.trackCode
+        ++ " "
+        ++ toString pool.raceNumber
+        ++ " "
+        ++ pool.flavour
 
 
 suggestionTable : Model -> Html Msg
@@ -250,17 +277,3 @@ decodeLeg : Decoder Leg
 decodeLeg =
     decode Leg
         |> required "selections" (Json.Decode.list int)
-
-
-
-{- Json.Decode.map
-      Suggestion
-      (field "legs" (Json.Decode.list decodeLeg))
-
-
-
-   decodeLeg : Decoder Leg
-   decodeLeg =
-       Json.Decode.map Leg
-           (field "selections" (Json.Decode.list Json.Decode.int))
--}
